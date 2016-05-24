@@ -1,12 +1,14 @@
 #pragma once
 
 #include <SFML/System.hpp>
+#include <SFML/Graphics.hpp>
 
 #include <vector>
 
+template <typename TileType>
 struct TileMap
 {
-    using TileType = bool;
+//    using TileType = bool;
 
     void setSize(const sf::Vector2i& size)
     {
@@ -19,17 +21,22 @@ struct TileMap
         return {width, tiles.size()/width};
     }
 
-    void setTile(const sf::Vector2f& pos, const TileType tile)
+    void setTile(const sf::Vector2i& pos, const TileType tile)
     {
         tiles[pos.y * width + pos.x] = tile;
     }
 
-    TileType getTile(const sf::Vector2f& size)
+    TileType getTile(const sf::Vector2i& pos)
     {
-        return tiles[size.y * width + size.x];
+        return tiles[pos.y * width + pos.x];
     }
 
-    static sf::FloatRect tileToRect(const sf::Vector2f& pos, const sf::Vector2f& tileSize)
+    TileType& at(const sf::Vector2i& pos)
+    {
+        return tiles[pos.y * width + pos.x];
+    }
+
+    static sf::FloatRect tileToRect(const sf::Vector2i& pos, const sf::Vector2f& tileSize)
     {
         sf::FloatRect rect;
 

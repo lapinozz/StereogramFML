@@ -25,6 +25,9 @@ struct PhysicEntity
 
     sf::Vector2f velocity;
     sf::Vector2f targetVelocity;
+    bool updateVelocity;
+
+    bool bounce;
 
 //    sf::Vector2f maxVelocity = {200, 200};
 

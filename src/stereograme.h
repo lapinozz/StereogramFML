@@ -259,6 +259,11 @@ vec3 ImageColour(vec2 vPixelCoord)
 	#ifdef SHOW_DEPTH_IMAGE
 	vec4 vImage = GetDepth(vPixelCoord, vec4(0.0));
 	vColour = vec3(vImage.w);
+
+	#ifdef ADD_COLOUR
+	vColour = vec3(vImage.rbg);
+	#endif
+
 	#endif
 
 	return vColour;

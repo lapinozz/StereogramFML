@@ -161,7 +161,8 @@ void Stereograme::draw(sf::RenderTarget& target, sf::RenderStates states) const
     states.transform *= getTransform();
     states.shader = &mShader;
 
-    mShader.setParameter("iResolution", (sf::Vector2f)mSprite.getTexture()->getSize());
+//    mShader.setParameter("iResolution", (sf::Vector2f)mSprite.getTexture()->getSize());
+    mShader.setParameter("iResolution", (sf::Vector2f)target.getSize());
 
     target.draw(mSprite, states);
 }
