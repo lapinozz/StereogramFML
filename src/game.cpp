@@ -12,6 +12,9 @@ void Game::loop()
     window.setVerticalSyncEnabled(true);
     window.setFramerateLimit(60);
 
+    view = window.getDefaultView();
+    viewTarget = view.getCenter();
+
     sf::Image patternImg;
     patternImg.loadFromFile("./res/color-hax-pattern.png");
     patternImg.loadFromFile("./res/pattern.jpg");
@@ -33,7 +36,7 @@ void Game::loop()
     st.setRandomBackDrop(true, false);
     st.setDepthScale(10);
     st.setPixelRepeat(100);
-//    st.setAddColour(true);
+    st.setAddColour(true);
     st.setShowDepthImage(true);
 //        st.useExternalTexture(depthTexture);
 
@@ -42,8 +45,11 @@ void Game::loop()
 
     sf::Clock deltaClock;
 
-    collisionGrid.setSize({(videoMode.width/GRID_SIZE), videoMode.height/GRID_SIZE});
-    map.setSize({(videoMode.width/TILE_SIZE)-2, videoMode.height/TILE_SIZE});
+    sf::Vector2f mapSize = {videoMode.width, videoMode.height};
+    mapSize *= 3.f;
+
+    collisionGrid.setSize({(mapSize.x/GRID_SIZE), mapSize.y/GRID_SIZE});
+    map.setSize({(mapSize.x/TILE_SIZE)-2, mapSize.y/TILE_SIZE});
 
     loadRessources();
     createPlayer({100, 100});
@@ -78,7 +84,9 @@ void Game::loop()
     map.setTile({8, 7}, true);
     map.setTile({8, 6}, true);
 
-    mapVertex = map.toVertexArray({TILE_SIZE, TILE_SIZE});
+    adaptor = TileAdaptor(map.getSize(), [this](const sf::Vector2i& pos){return !map.getTile(pos);});
+
+    mapUpdated();
 
     while (window.isOpen())
     {
@@ -94,13 +102,14 @@ void Game::loop()
                 handleEvent(event);
         }
 
-        update(deltaClock.restart().asSeconds());
         st.setCurrentTime(fpClock.getElapsedTime().asSeconds());
-
-        window.clear();
-        st.clear();
+//
+//        window.clear();
+//        st.clear();
+        st.setView(view);
 
         render();
+        update(deltaClock.restart().asSeconds());
         st.display();
         window.draw(st);
 
@@ -119,10 +128,25 @@ void Game::loop()
 void Game::update(float dt)
 {
     updatePlayer(dt);
+    updateEnemy(dt);
+    updateView(dt);
 
     updatePhysic(dt);
     updateCollisionGrid();
     handleCollision();
+}
+
+void Game::updateView(float dt)
+{
+    viewTarget = mEntitys[mPlayerId].position;
+
+    viewTarget.x = std::max(viewTarget.x, window.getSize().x/2.f);
+    viewTarget.y = std::max(viewTarget.y, window.getSize().y/2.f);
+
+    viewTarget.x = std::min(viewTarget.x, TILE_SIZE*map.getSize().x - window.getSize().x/2.f);
+    viewTarget.y = std::min(viewTarget.y, TILE_SIZE*map.getSize().y - window.getSize().y/2.f);
+
+    view.setCenter(lerp(view.getCenter(), viewTarget, 3*dt));
 }
 
 void Game::updatePhysic(float dt)
@@ -142,15 +166,81 @@ void Game::updatePhysic(float dt)
 
 void Game::updatePlayer(float dt)
 {
-    auto mousePos = sf::Mouse::getPosition(window);
+    auto mousePos = getMousePos();
 
-    for(auto id : getEntityAtCollisionGrid({mousePos.x, mousePos.y, 0, 0}))
-        std::cout << id << std::endl;
-
+//    for(auto id : getEntityAtCollisionGrid({mousePos.x, mousePos.y, 0, 0}))
+//        std::cout << id << std::endl;
 
     auto& entity = mEntitys[mPlayerId];
 
+    auto path = pathfinder.search(toMapPos(mousePos), toMapPos(entity.position),
+                                        {
+                                            [this](const auto id)
+                                            {
+                                                return adaptor.idToPos(id);
+                                            }
+                                        },
+                                        {
+                                            [this](const auto& data)
+                                            {
+                                                return adaptor.posToId(data);
+                                            }
+                                        });
+
+    sf::RectangleShape rect({TILE_SIZE, TILE_SIZE});
+    rect.setFillColor(sf::Color::Transparent);
+    rect.setOutlineThickness(2);
+
+    rect.setOutlineColor(sf::Color::Blue);
+    rect.setPosition((sf::Vector2f)((((sf::Vector2i)entity.position)/TILE_SIZE)*TILE_SIZE));
+    st.draw(rect);
+
+    rect.setOutlineColor(sf::Color::Green);
+    rect.setPosition((sf::Vector2f)((((sf::Vector2i)mousePos)/TILE_SIZE)*TILE_SIZE));
+    st.draw(rect);
+
+    rect.setOutlineColor(sf::Color::Red);
+    for(auto pos : path)
+    {
+        rect.setPosition(pos.x * TILE_SIZE, pos.y * TILE_SIZE);
+        st.draw(rect);
+    }
+
+
     entity.rotation = vectorToAngle((sf::Vector2f)mousePos - entity.position);
+}
+
+void Game::updateEnemy(float dt)
+{
+    const auto& player = mEntitys[mPlayerId];
+
+    for(const auto& controller : mEnemyControllers)
+    {
+        auto& enemy = mEntitys[controller.entityId];
+        auto& enemyPhysic = *find_member_if_equal(mPhysicEntitys.begin(), mPhysicEntitys.end(), &PhysicEntity::entityId, controller.entityId);
+
+        auto path = pathfinder.search(toMapPos(enemy.position), toMapPos(player.position),
+                                        {
+                                            [this](const auto id)
+                                            {
+                                                return adaptor.idToPos(id);
+                                            }
+                                        },
+                                        {
+                                            [this](const auto& data)
+                                            {
+                                                return adaptor.posToId(data);
+                                            }
+                                        });
+
+        if(path.size() > 1)
+        {
+            auto targetPos = toWorldPos(path[1]);
+
+            enemyPhysic.targetVelocity = normalize(targetPos - enemy.position) * 200.f;
+            enemy.rotation = vectorToAngle(targetPos - enemy.position);
+        }
+    }
 }
 
 void Game::handleEvent(const sf::Event& event)
@@ -174,16 +264,51 @@ void Game::handleEvent(const sf::Event& event)
         directionSolver.leftMaybeInactive(event.key.code == LEFT);
         directionSolver.rightMaybeInactive(event.key.code == RIGHT);
     }
-    else if(event.type == sf::Event::MouseButtonPressed)
+    else if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
     {
         const auto& entity = mEntitys[mPlayerId];
 
         createBullet(entity.position, entity.rotation, 600);
     }
+    else if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right)
+    {
+        const sf::Vector2i mousePos = (sf::Vector2i)getMousePos()/TILE_SIZE;
+
+        map.setTile(mousePos, !map.getTile(mousePos));
+
+        mapUpdated();
+    }
+    else if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Middle)
+    {
+        createEnemy(getMousePos());
+    }
 
     auto it = find_member_if_equal(mPhysicEntitys.begin(), mPhysicEntitys.end(), &PhysicEntity::entityId, mPlayerId);
     if(it != mPhysicEntitys.end())
         it->targetVelocity = normalize(directionSolver.getDirection()) * 500.f;
+}
+
+void Game::mapUpdated()
+{
+    mapVertex = map.toVertexArray({TILE_SIZE, TILE_SIZE});
+    pathfinder.generateNodes();
+}
+
+sf::Vector2f Game::getMousePos()
+{
+//    return view.getTransform().transformPoint((sf::Vector2f));
+//    return (sf::Vector2f)sf::Mouse::getPosition(window);
+    return window.mapPixelToCoords(sf::Mouse::getPosition(window), view);
+}
+
+sf::Vector2i Game::toMapPos(sf::Vector2f worldPos)
+{
+    return (sf::Vector2i)(worldPos/(float)TILE_SIZE);
+}
+
+sf::Vector2f Game::toWorldPos(sf::Vector2i mapPos)
+{
+    return (sf::Vector2f)(mapPos*TILE_SIZE);
 }
 
 void Game::handleCollision()
@@ -208,7 +333,7 @@ void Game::handleCollision()
                     if(physicEntity.bounce)
                     {
                         physicEntity.velocity -=  2.f * dot(physicEntity.velocity, manifold.normal) * manifold.normal;
-                        physicEntity.velocity *= 0.8f;
+//                        physicEntity.velocity *= 0.8f;
                     }
                     else
                     //velocity negation code
@@ -304,6 +429,17 @@ void Game::createPlayer(sf::Vector2f pos)
     addEntityToCollisionGrid(id);
 
     mPlayerId = id;
+}
+
+void Game::createEnemy(sf::Vector2f pos)
+{
+    auto id = mEntitys.insert({pos, 0, TILE_SIZE/2});
+    mRenderEntitys.insert({id, Textures::PLAYER});
+    mPhysicEntitys.insert({id, {}, {}, true, false});
+
+    mEnemyControllers.insert({id});
+
+    addEntityToCollisionGrid(id);
 }
 
 void Game::createBullet(sf::Vector2f pos, float angle, float speed, sf::Vector2f initialVelocity)

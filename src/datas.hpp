@@ -34,3 +34,8 @@ struct PhysicEntity
 //    float deceleration = 200;
 
 };
+
+struct EnemyController
+{
+    const int32_t entityId;
+};

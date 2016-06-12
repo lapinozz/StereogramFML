@@ -4,6 +4,13 @@
 
 #include "mappedvector.h"
 
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const sf::Vector2<T>& v)
+{
+    os << v.x << ":" << v.y;
+    return os;
+}
+
 template <typename Iterator, typename T, typename MemberType>
 Iterator find_member_if_equal(const Iterator& begin, const Iterator& end, const MemberType T::*memberPtr, const MemberType& value)
 {
@@ -40,7 +47,7 @@ template<class T> T toDeg(T val)
 
 template<class T> T length(sf::Vector2<T> vector)
 {
-		return sqrt(vector.x * vector.x + vector.y * vector.y);
+    return sqrt(vector.x * vector.x + vector.y * vector.y);
 }
 
 template<class T> T normalize(T vector)
@@ -50,6 +57,11 @@ template<class T> T normalize(T vector)
         return sf::Vector2f(0, 0);
 
     return vector / length;
+}
+
+template<class T> T dist(sf::Vector2<T> p1, sf::Vector2<T> p2)
+{
+    return length(p1 - p2);
 }
 
 template<typename T> T perpandicular(T vector)

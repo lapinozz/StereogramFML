@@ -16,7 +16,7 @@ struct TileMap
         width = size.x;
     }
 
-    sf::Vector2i getSize()
+    sf::Vector2i getSize() const
     {
         return {width, tiles.size()/width};
     }
@@ -26,7 +26,7 @@ struct TileMap
         tiles[pos.y * width + pos.x] = tile;
     }
 
-    TileType getTile(const sf::Vector2i& pos)
+    TileType getTile(const sf::Vector2i& pos) const
     {
         return tiles[pos.y * width + pos.x];
     }
@@ -48,7 +48,7 @@ struct TileMap
         return rect;
     }
 
-    sf::VertexArray toVertexArray(const sf::Vector2f& tileSize)
+    sf::VertexArray toVertexArray(const sf::Vector2f& tileSize) const
     {
         sf::VertexArray array;
 //        array.setPrimitiveType(sf::PrimitiveType::TrianglesStrip);
