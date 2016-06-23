@@ -6,8 +6,10 @@ void Game::loop()
 {
     sf::VideoMode videoMode;
     videoMode = sf::VideoMode(640, 480);
-    videoMode = sf::VideoMode::getDesktopMode();
+//    videoMode = sf::VideoMode::getDesktopMode();
+//    videoMode = sf::VideoMode::getFullscreenModes()[0];
 
+//    window.create(videoMode, "FPS incoming", sf::Style::Default | sf::Style::Fullscreen);
     window.create(videoMode, "FPS incoming");
     window.setVerticalSyncEnabled(true);
     window.setFramerateLimit(60);
@@ -268,7 +270,9 @@ void Game::handleEvent(const sf::Event& event)
     {
         const auto& entity = mEntitys[mPlayerId];
 
-        createBullet(entity.position, entity.rotation, 600);
+        auto pos = entity.position + angleToVector(entity.rotation) * ((PLAYER_SIZE/2.f + BULLET_SIZE/2.f) + 100.f);
+
+        createBullet(pos, entity.rotation, 600);
     }
     else if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right)
     {
@@ -329,6 +333,8 @@ void Game::handleCollision()
                 {
                     entity.position += manifold.normal * manifold.depth;
 
+                    handleDamage(physicEntity.entityId, -1, length(physicEntity.velocity));
+
                     //bounce code
                     if(physicEntity.bounce)
                     {
@@ -353,6 +359,8 @@ void Game::handleCollision()
             auto manifold = CircleVsCircle(entity.position, entity.radius, other.position, other.radius);
             if(manifold.collide)
             {
+                handleDamage(physicEntity.entityId, id, 0);
+
                 entity.position += manifold.normal * manifold.depth * 0.5f;
                 other.position -= manifold.normal * manifold.depth * 0.5f;
 
@@ -373,6 +381,50 @@ void Game::handleCollision()
                 otherPhysicEntity.velocity = manifold.normal * scalaNormAfter2 + tangent * dot(tangent, otherPhysicEntity.velocity);
             }
         }
+    }
+}
+
+void Game::handleDamage(LifeEntity& entity, float dmg)
+{
+    dmg *= 1.f - entity.armor;
+
+    dmg = std::max(dmg, (float)entity.minDmgTaken);
+
+    if(entity.maxDmgTaken != -1)
+        dmg = std::min(dmg, (float)entity.maxDmgTaken);
+
+    entity.life -= dmg;
+
+    if(entity.entityId == 0)
+        std::cout << entity.life << std::endl;
+
+    if(entity.life <= 0)
+        deleteEntity(entity.entityId);
+}
+
+void Game::handleDamage(int32_t id1, int32_t id2, float velocity)
+{
+    auto it1 = find_member_if_equal(mLifeEntitys.begin(), mLifeEntitys.end(), &LifeEntity::entityId, id1);
+    if(it1 == mLifeEntitys.end())
+        return;
+
+    //if wall
+    if(id2 == -1)
+    {
+        float dmg = velocity * it1->dmgOnWall;
+        handleDamage(*it1, dmg);
+    }
+    else
+    {
+        auto it2 = find_member_if_equal(mLifeEntitys.begin(), mLifeEntitys.end(), &LifeEntity::entityId, id2);
+        if(it2 == mLifeEntitys.end())
+            return;
+
+        auto dmg1 = it1->dmg;
+        auto dmg2 = it2->dmg;
+
+        handleDamage(*it1, dmg2);
+        handleDamage(*it2, dmg1);
     }
 }
 
@@ -422,9 +474,11 @@ void Game::renderEntitys()
 
 void Game::createPlayer(sf::Vector2f pos)
 {
-    auto id = mEntitys.insert({pos, 0, TILE_SIZE/2});
+    auto id = mEntitys.insert({pos, 0, PLAYER_SIZE});
     mRenderEntitys.insert({id, Textures::PLAYER});
     mPhysicEntitys.insert({id, {}, {}, true, false});
+    mLifeEntitys.insert({id, 100, 0.f, 0, 0, 0, 0.f});
+//    mLifeEntitys.insert({id, 100, 0.f, 0, -1, 0, 0.f});
 
     addEntityToCollisionGrid(id);
 
@@ -433,9 +487,10 @@ void Game::createPlayer(sf::Vector2f pos)
 
 void Game::createEnemy(sf::Vector2f pos)
 {
-    auto id = mEntitys.insert({pos, 0, TILE_SIZE/2});
+    auto id = mEntitys.insert({pos, 0, ENEMY_SIZE});
     mRenderEntitys.insert({id, Textures::PLAYER});
     mPhysicEntitys.insert({id, {}, {}, true, false});
+    mLifeEntitys.insert({id, 50, 0.f, 0, -1, 0, 0.f});
 
     mEnemyControllers.insert({id});
 
@@ -444,11 +499,23 @@ void Game::createEnemy(sf::Vector2f pos)
 
 void Game::createBullet(sf::Vector2f pos, float angle, float speed, sf::Vector2f initialVelocity)
 {
-    auto id = mEntitys.insert({pos, angle, TILE_SIZE/4});
+    auto id = mEntitys.insert({pos, angle, BULLET_SIZE});
     mRenderEntitys.insert({id, Textures::NONE});
     mPhysicEntitys.insert({id, initialVelocity + normalize(angleToVector(angle))*speed, {}, false, true});
+    mLifeEntitys.insert({id, 3, 0.f, 25, 1, 1, 0.1f});
 
     addEntityToCollisionGrid(id);
+}
+
+void Game::deleteEntity(int32_t id)
+{
+    removeEntityFromCollisionGrid(id);
+
+    mEntitys.remove(id);
+    mRenderEntitys.remove(findEntity(mRenderEntitys, id));
+    mPhysicEntitys.remove(findEntity(mPhysicEntitys, id));
+    mEnemyControllers.remove(findEntity(mEnemyControllers, id));
+    mLifeEntitys.remove(findEntity(mLifeEntitys, id));
 }
 
 sf::FloatRect Game::getEntityRect(int32_t id)

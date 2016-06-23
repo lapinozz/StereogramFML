@@ -18,6 +18,8 @@ class MappedVector
 
         class iterator
         {
+            friend MappedVector;
+
             public:
                 typedef iterator self_type;
                 typedef T value_type;
@@ -30,8 +32,8 @@ class MappedVector
                 self_type operator++() { self_type i = *this; do ptr_++; while(!ptr_->initialized && ptr_!= end_); return i; }
                 reference operator*() { return *(T*)(ptr_->value); }
                 pointer operator->() { return (T*)(ptr_->value); }
-                bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
-                bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
+                bool operator==(const self_type& rhs) const { return ptr_ == rhs.ptr_; }
+                bool operator!=(const self_type& rhs) const { return ptr_ != rhs.ptr_; }
             private:
                 Storage* ptr_;
                 Storage* end_;
@@ -39,6 +41,8 @@ class MappedVector
 
         class const_iterator
         {
+            friend MappedVector;
+
             public:
                 typedef const_iterator self_type;
                 typedef T value_type;
@@ -46,6 +50,7 @@ class MappedVector
                 typedef T* pointer;
                 typedef int difference_type;
                 typedef std::forward_iterator_tag iterator_category;
+//                const_iterator(const iterator& it) : ptr_(it.ptr_), end_(it.end_) { }
                 const_iterator(pointer* ptr, pointer* end) : ptr_(ptr), end_(end) { }
                 self_type operator++() { self_type i = *this; do ptr_++; while(!ptr_->initialized && ptr_ != end_); return i; }
                 self_type operator++(int junk) { do ptr_++; while(!ptr_->initialized && ptr_!= end_); return *this; }
@@ -139,6 +144,26 @@ class MappedVector
         void remove(const IdType id)
         {
             if(mBuffer[id].initialized)
+            {
+                ((T*)&mBuffer[id].value)->T::~T();
+                mBuffer[id].initialized = false;
+
+                if(id + 1 == mBuffer.size())
+                    mBuffer.resize(id);
+                else
+                    mFreeId.push_back(id);
+            }
+        }
+
+        void remove(const iterator& it)
+        {
+            if(it == end())
+                return;
+
+//            auto id = (it.ptr_ - mBuffer.data()) / sizeof(Storage);
+            auto id = it.ptr_ - mBuffer.data();
+
+            if(id < mBuffer.size() && mBuffer[id].initialized)
             {
                 ((T*)&mBuffer[id].value)->T::~T();
                 mBuffer[id].initialized = false;

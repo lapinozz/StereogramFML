@@ -39,3 +39,17 @@ struct EnemyController
 {
     const int32_t entityId;
 };
+
+struct LifeEntity
+{
+    const int32_t entityId;
+
+    int32_t life;
+    float armor;
+
+    int32_t dmg;
+    int32_t maxDmgTaken;
+    int32_t minDmgTaken;
+
+    float dmgOnWall;
+};
