@@ -2,7 +2,7 @@
 
 #include <SFML/System.hpp>
 
-enum Textures {NONE = 0, PLAYER, TEXTURE_COUNT};
+enum Textures {NONE = 0, PLAYER, CURSOR, TEXTURE_COUNT};
 
 struct Entiy
 {

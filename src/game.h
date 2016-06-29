@@ -28,6 +28,7 @@ class Game
         void render();
         void renderEntitys();
         void renderTileMap();
+        void renderMouse();
 
         void update(float dt);
         void updateView(float dt);
@@ -66,6 +67,8 @@ class Game
         sf::RenderWindow window;
         Stereograme st;
 
+        sf::Sprite cursor;
+
         sf::View view;
         sf::Vector2f viewTarget = {0, 0};
 
@@ -93,7 +96,7 @@ class Game
         const int ENEMY_SIZE = TILE_SIZE/2;
         const int BULLET_SIZE = TILE_SIZE/4;
 
-        const char* texturePaths[TEXTURE_COUNT] = {"", "./res/body.png"};
+        const char* texturePaths[TEXTURE_COUNT] = {"", "./res/body.png", "./res/mouse-cursor.png"};
         sf::Texture textures[TEXTURE_COUNT];
 
         template<typename T>

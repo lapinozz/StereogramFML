@@ -7,10 +7,11 @@ void Game::loop()
     sf::VideoMode videoMode;
     videoMode = sf::VideoMode(640, 480);
 //    videoMode = sf::VideoMode::getDesktopMode();
-//    videoMode = sf::VideoMode::getFullscreenModes()[0];
+    videoMode = sf::VideoMode::getFullscreenModes()[0];
 
-//    window.create(videoMode, "FPS incoming", sf::Style::Default | sf::Style::Fullscreen);
-    window.create(videoMode, "FPS incoming");
+    window.create(videoMode, "FPS incoming", sf::Style::Default | sf::Style::Fullscreen);
+    window.setMouseCursorVisible(false);
+//    window.create(videoMode, "FPS incoming");
     window.setVerticalSyncEnabled(true);
     window.setFramerateLimit(60);
 
@@ -36,10 +37,10 @@ void Game::loop()
     st.setInvertedDepth(true, false);
 //    st.setAnimate(true);
     st.setRandomBackDrop(true, false);
-    st.setDepthScale(10);
-    st.setPixelRepeat(100);
-    st.setAddColour(true);
-    st.setShowDepthImage(true);
+    st.setDepthScale(16);
+    st.setPixelRepeat(210);
+//    st.setAddColour(true);
+//    st.setShowDepthImage(true);
 //        st.useExternalTexture(depthTexture);
 
     sf::Clock fpClock;
@@ -55,6 +56,10 @@ void Game::loop()
 
     loadRessources();
     createPlayer({100, 100});
+
+    cursor.setTexture(textures[CURSOR]);
+    cursor.setScale({12, 12});
+    cursor.setOrigin((sf::Vector2f)(cursor.getTexture()->getSize()/2u));
 
     for(int x = 0; x < map.getSize().x; x++)
         map.setTile({x, 0}, true);
@@ -137,6 +142,7 @@ void Game::update(float dt)
     updateCollisionGrid();
     handleCollision();
 }
+
 
 void Game::updateView(float dt)
 {
@@ -258,6 +264,17 @@ void Game::handleEvent(const sf::Event& event)
         directionSolver.downMaybeActive(event.key.code == DOWN);
         directionSolver.leftMaybeActive(event.key.code == LEFT);
         directionSolver.rightMaybeActive(event.key.code == RIGHT);
+
+        if(event.key.code == sf::Keyboard::F1)
+        {
+            st.setShowDepthImage(true);
+            st.setAddColour(true);
+        }
+        else if(event.key.code == sf::Keyboard::F2)
+        {
+            st.setShowDepthImage(false);
+            st.setAddColour(false);
+        }
     }
     else if(event.type == sf::Event::KeyReleased)
     {
@@ -270,7 +287,7 @@ void Game::handleEvent(const sf::Event& event)
     {
         const auto& entity = mEntitys[mPlayerId];
 
-        auto pos = entity.position + angleToVector(entity.rotation) * ((PLAYER_SIZE/2.f + BULLET_SIZE/2.f) + 100.f);
+        auto pos = entity.position + angleToVector(entity.rotation) * (float(PLAYER_SIZE + BULLET_SIZE ));
 
         createBullet(pos, entity.rotation, 600);
     }
@@ -432,12 +449,13 @@ void Game::render()
 {
     renderTileMap();
     renderEntitys();
+    renderMouse();
 
 //    sf::RectangleShape rect({GRID_SIZE, GRID_SIZE});
 //    rect.setFillColor(sf::Color::Transparent);
 //    rect.setOutlineColor(sf::Color::Red);
 //    rect.setOutlineThickness(2);
-//
+
 //    for(int x = 0; x < collisionGrid.getSize().x; x++)
 //    {
 //        for(int y = 0; y < collisionGrid.getSize().y; y++)
@@ -459,6 +477,8 @@ void Game::renderEntitys()
 {
     sf::CircleShape shape;
 
+    shape.setFillColor(white(255/2));
+
     for(auto renderer : mRenderEntitys)
     {
         const auto& entity = mEntitys[renderer.entityId];
@@ -470,6 +490,12 @@ void Game::renderEntitys()
         shape.setOrigin(entity.radius, entity.radius);
         st.draw(shape);
     }
+}
+
+void Game::renderMouse()
+{
+    cursor.setPosition(getMousePos());
+    st.draw(cursor);
 }
 
 void Game::createPlayer(sf::Vector2f pos)

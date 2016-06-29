@@ -93,3 +93,8 @@ template <typename T> int sgn(T val)
 {
     return (T(0) < val) - (val < T(0));
 }
+
+inline sf::Color white(char weight = 255, char alpha = 255)
+{
+    return {weight, weight, weight, alpha};
+}

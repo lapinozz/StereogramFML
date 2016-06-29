@@ -3,13 +3,13 @@
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 
+#include "utility.hpp"
+
 #include <vector>
 
 template <typename TileType>
 struct TileMap
 {
-//    using TileType = bool;
-
     void setSize(const sf::Vector2i& size)
     {
         tiles.resize(size.x * size.y);
@@ -51,14 +51,14 @@ struct TileMap
     sf::VertexArray toVertexArray(const sf::Vector2f& tileSize) const
     {
         sf::VertexArray array;
-//        array.setPrimitiveType(sf::PrimitiveType::TrianglesStrip);
         array.setPrimitiveType(sf::PrimitiveType::Quads);
         array.resize(tiles.size() * 4);
         for(size_t i = 0; i < tiles.size(); i++)
         {
             const auto& tile = tiles[i];
             const sf::Vector2f pos = sf::Vector2f{i % width, i / width} * tileSize.x;
-            const sf::Color color = tile ? sf::Color::White : sf::Color::Black;
+            sf::Color color = tile ? white(200) : white(0, 100);
+//            color.a = tile ? 100 : 100;
 
             array[i*4 + 0] = {pos, color};
             array[i*4 + 1] = {pos + sf::Vector2f{tileSize.x , 0}, color};

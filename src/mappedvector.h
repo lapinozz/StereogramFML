@@ -99,7 +99,7 @@ class MappedVector
         {
             if(mFreeId.empty())
             {
-                mBuffer.push_back({});
+                mBuffer.emplace_back();
                 new (&mBuffer.back().value) T(t);
                 mBuffer.back().initialized = true;
 
