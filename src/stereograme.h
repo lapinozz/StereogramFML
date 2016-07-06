@@ -91,7 +91,7 @@ static const auto DEFINE_ANIMATE                   = "ANIMATE";
 static const auto DEFINE_RANDOM_BACK_DROP          = "RANDOM_BACKDROP_OFFSET";
 static const auto DEFINE_RANDOM_BACK_DROP_PER_LINE = "RANDOM_BACKDROP_OFFSET_PER_LINE";
 
-static const std::string SHADER_DEFINE             = "#define";
+static const std::string SHADER_DEFINE             = "#define ";
 
 static const auto shaderString = R"(// Stereogram - @P_Malin
 

@@ -275,6 +275,10 @@ void Game::handleEvent(const sf::Event& event)
             st.setShowDepthImage(false);
             st.setAddColour(false);
         }
+        else if(event.key.code == sf::Keyboard::Escape)
+        {
+            exit(0);
+        }
     }
     else if(event.type == sf::Event::KeyReleased)
     {
