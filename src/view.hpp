@@ -7,4 +7,4 @@ struct View
     sf::View view;
 
     sf::Vector2f targetPos;
-    };
+};

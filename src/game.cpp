@@ -1,21 +1,23 @@
 #include "game.h"
 
 #include "utility.hpp"
+#include "dungeonGenerator.hpp"
 
 void Game::loop()
 {
     sf::VideoMode videoMode;
     videoMode = sf::VideoMode(640, 480);
-//    videoMode = sf::VideoMode::getDesktopMode();
-    videoMode = sf::VideoMode::getFullscreenModes()[0];
+    videoMode = sf::VideoMode::getDesktopMode();
+//    videoMode = sf::VideoMode::getFullscreenModes()[0];
 
-    window.create(videoMode, "FPS incoming", sf::Style::Default | sf::Style::Fullscreen);
+//    window.create(videoMode, "FPS incoming", sf::Style::Default | sf::Style::Fullscreen);
+    window.create(videoMode, "FPS incoming", sf::Style::Default);
     window.setMouseCursorVisible(false);
-//    window.create(videoMode, "FPS incoming");
     window.setVerticalSyncEnabled(true);
     window.setFramerateLimit(60);
 
     view = window.getDefaultView();
+    view.zoom(2.f);
     viewTarget = view.getCenter();
 
     sf::Image patternImg;
@@ -39,8 +41,8 @@ void Game::loop()
     st.setRandomBackDrop(true, false);
     st.setDepthScale(16);
     st.setPixelRepeat(210);
-//    st.setAddColour(true);
-//    st.setShowDepthImage(true);
+    st.setAddColour(true);
+    st.setShowDepthImage(true);
 //        st.useExternalTexture(depthTexture);
 
     sf::Clock fpClock;
@@ -48,48 +50,50 @@ void Game::loop()
 
     sf::Clock deltaClock;
 
-    sf::Vector2f mapSize = {videoMode.width, videoMode.height};
-    mapSize *= 3.f;
+    Dungeon dungeon;
+    generateDungeon(dungeon);
+
+//    sf::Vector2f mapSize = {videoMode.width, videoMode.height};
+    sf::Vector2f mapSize = (sf::Vector2f)(dungeon.size * TILE_SIZE) * 2.f;
 
     collisionGrid.setSize({(mapSize.x/GRID_SIZE), mapSize.y/GRID_SIZE});
     map.setSize({(mapSize.x/TILE_SIZE)-2, mapSize.y/TILE_SIZE});
 
     loadRessources();
-    createPlayer({100, 100});
+
+    auto& startRoom = dungeon.rooms[0];
+    auto startPos = startRoom.pos + startRoom.size / 2;
+    createPlayer({startPos.x * TILE_SIZE, startPos.y * TILE_SIZE});
 
     cursor.setTexture(textures[CURSOR]);
     cursor.setScale({12, 12});
     cursor.setOrigin((sf::Vector2f)(cursor.getTexture()->getSize()/2u));
 
-    for(int x = 0; x < map.getSize().x; x++)
-        map.setTile({x, 0}, true);
+    map.setRect({0, 0}, map.getSize(), true);
 
-    for(int x = 0; x < map.getSize().y; x++)
-        map.setTile({0, x}, true);
+    for(const auto& room : dungeon.rooms)
+        map.setRect(room.pos*2, room.size*2, false);
 
-    for(int x = 0; x < map.getSize().x; x++)
-        map.setTile({x, map.getSize().y-1}, true);
+    for(const auto& corridor : dungeon.corridors)
+        map.setRect(corridor.start*2, (corridor.end - corridor.start)*2, false);
 
-    for(int x = 0; x < map.getSize().y; x++)
-        map.setTile({map.getSize().x-1, x}, true);
-
-    map.setTile({5, 5}, true);
-    map.setTile({4, 5}, true);
-    map.setTile({3, 5}, true);
-    map.setTile({2, 5}, true);
-    map.setTile({5, 5}, true);
-    map.setTile({5, 6}, true);
-    map.setTile({5, 7}, true);
-    map.setTile({5, 8}, true);
-    map.setTile({6, 8}, true);
-    map.setTile({7, 8}, true);
-    map.setTile({8, 8}, true);
-    map.setTile({9, 8}, true);
-    map.setTile({10, 8}, true);
-    map.setTile({11, 8}, true);
-    map.setTile({12, 8}, true);
-    map.setTile({8, 7}, true);
-    map.setTile({8, 6}, true);
+//    map.setTile({5, 5}, true);
+//    map.setTile({4, 5}, true);
+//    map.setTile({3, 5}, true);
+//    map.setTile({2, 5}, true);
+//    map.setTile({5, 5}, true);
+//    map.setTile({5, 6}, true);
+//    map.setTile({5, 7}, true);
+//    map.setTile({5, 8}, true);
+//    map.setTile({6, 8}, true);
+//    map.setTile({7, 8}, true);
+//    map.setTile({8, 8}, true);
+//    map.setTile({9, 8}, true);
+//    map.setTile({10, 8}, true);
+//    map.setTile({11, 8}, true);
+//    map.setTile({12, 8}, true);
+//    map.setTile({8, 7}, true);
+//    map.setTile({8, 6}, true);
 
     adaptor = TileAdaptor(map.getSize(), [this](const sf::Vector2i& pos){return !map.getTile(pos);});
 
@@ -148,11 +152,11 @@ void Game::updateView(float dt)
 {
     viewTarget = mEntitys[mPlayerId].position;
 
-    viewTarget.x = std::max(viewTarget.x, window.getSize().x/2.f);
-    viewTarget.y = std::max(viewTarget.y, window.getSize().y/2.f);
+    viewTarget.x = std::max(viewTarget.x, view.getSize().x/2.f);
+    viewTarget.y = std::max(viewTarget.y, view.getSize().y/2.f);
 
-    viewTarget.x = std::min(viewTarget.x, TILE_SIZE*map.getSize().x - window.getSize().x/2.f);
-    viewTarget.y = std::min(viewTarget.y, TILE_SIZE*map.getSize().y - window.getSize().y/2.f);
+    viewTarget.x = std::min(viewTarget.x, TILE_SIZE*map.getSize().x - view.getSize().x/2.f);
+    viewTarget.y = std::min(viewTarget.y, TILE_SIZE*map.getSize().y - view.getSize().y/2.f);
 
     view.setCenter(lerp(view.getCenter(), viewTarget, 3*dt));
 }

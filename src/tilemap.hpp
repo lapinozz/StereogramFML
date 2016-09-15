@@ -26,6 +26,29 @@ struct TileMap
         tiles[pos.y * width + pos.x] = tile;
     }
 
+    void setRect(sf::Vector2i pos, sf::Vector2i size, const TileType tile)
+    {
+        if(size.x < 0)
+        {
+            size.x = std::abs(size.x);
+            pos.x -= size.x;
+        }
+
+        if(size.y < 0)
+        {
+            size.y = std::abs(size.y);
+            pos.y -= size.y;
+        }
+
+        for(int x = 0; x < size.x; x++)
+        {
+            for(int y = 0; y < size.y; y++)
+            {
+                setTile({x + pos.x, y + pos.y}, tile);
+            }
+        }
+    }
+
     TileType getTile(const sf::Vector2i& pos) const
     {
         return tiles[pos.y * width + pos.x];

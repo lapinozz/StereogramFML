@@ -23,9 +23,9 @@ class Grid
             mSize = size;
             mCells.setSize(size);
 
-            for(size_t x = 0; x < size.x; x++)
+            for(int x = 0; x < size.x; x++)
             {
-                for(size_t y = 0; y < size.y; y++)
+                for(int y = 0; y < size.y; y++)
                 {
                     if(x != 0)
                         mCells.at({x, y}).w = &mCells.at({x - 1, y});

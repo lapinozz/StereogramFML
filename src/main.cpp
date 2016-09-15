@@ -11,8 +11,6 @@
 
 int main(int argc, char** argv)
 {
-
-
 //    std::stringstream ss;
 //    std::string s("hey ho");
 //    s[3] = '\0';
@@ -35,6 +33,7 @@ int main(int argc, char** argv)
 //    std::cout << Stereograme::textHighlight(
 //                                            "According to the police inspector, Edward *John Billings, there are too many individuals too close to the case to make an arrest. I asked Mary *Smith to comment on the case, but she declined to comment, because she *is soon to be married to Howard D. Fredericks, the victim's uncle. Charles Wilson, the victim's brother, stated that the chaos was ***responsible for at least five suicide attempts last week alone. "
 //                                            , 23) << std::endl;
+//                                            while(1);
 
     std::vector<char> depthMap =
     {
@@ -142,7 +141,7 @@ int main(int argc, char** argv)
 //        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
 //    };
 
-    std::cout << Stereograme::ascii(depthMap, 46, "blahaxtiromoupkldef", 10) << std::endl;
+//    std::cout << Stereograme::ascii(depthMap, 46, "blahaxtiromoupkldef", 10) << std::endl;
 
 //        while(1);
 //    return 0;
